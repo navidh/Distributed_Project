@@ -7,7 +7,7 @@ public class FTPClient {
        	    	  System.err.println("Usage: java EchoClient cf2.cs.uga.edu 8080");
        	    	  System.exit(1);
 	      }
-	      
+	      //aaaaa
 	      String hostName = args[0];
 	      int portNumber = Integer.parseInt(args[1]);
 	      
