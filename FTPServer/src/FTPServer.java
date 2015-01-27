@@ -13,12 +13,14 @@ public class FTPServer {
 
 		try (
 				ServerSocket serverSocket = new ServerSocket(Integer.parseInt(args[0]));
-				Socket clientSocket = serverSocket.accept();     
-				PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);                   
-				BufferedReader in = new BufferedReader( new InputStreamReader(clientSocket.getInputStream()));
+				Socket clientSocket = serverSocket.accept(); 
+
+				DataInputStream in = new DataInputStream(clientSocket.getInputStream());
+				DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
+
 				) {
 			String inputLine;
-			while ((inputLine = in.readLine()) != null) {
+			while ((inputLine = in.readUTF()) != null) {
 				String cmdName="";
 				String paraName ="";
 				boolean result=false;
@@ -37,23 +39,35 @@ public class FTPServer {
 				switch (cmdName){
 				case "mkdir":					
 					result = CreateDirectory(paraName);
-					out.println( result);
+					out.writeUTF( String.valueOf(result));
 					break;
 				case "delete":
 					result = DeleteDirectory(paraName);
-					out.println( result);
+					out.writeUTF( String.valueOf(result));
 					break;
 				case "ls":
-					out.println( ListDirectory());
+					out.writeUTF( ListDirectory());
 					break;
 				case "pwd":
-					out.println( CurrentDirectory());
+					out.writeUTF( CurrentDirectory());
 					break;
 				case "cd":
-					out.println( ChangeDirectory(paraName));
+					out.writeUTF(ChangeDirectory (paraName));
 					break;
+				case "put":
+					receiveFile(paraName, in, out);
+					break;	
+				case "get":
+					SendFile(paraName, in, out);
+					break;
+				case "quit":
+					out.close();
+					in.close();
+					serverSocket.close();
+					System.exit(1);
+					
 				default:
-					out.println(cmdName + ": command not found");
+					out.writeUTF(cmdName + ": command not found");
 					break;
 				}
 
@@ -68,11 +82,8 @@ public class FTPServer {
 
 	}
 
-	public static boolean CreateDirectory(String directoryName){	
-		File dir = new File (System.getProperty("user.dir"));
-		String ParentName = dir.getParentFile().getAbsolutePath();
-//		File dir = new File (directoryName);
-		System.setProperty("user.dir", ParentName);
+	public static boolean CreateDirectory(String directoryName){		
+		File dir = new File (directoryName);
 		return dir.mkdir();				
 	}
 
@@ -101,6 +112,46 @@ public class FTPServer {
 		String pwd = System.getProperty("user.dir");
 		return pwd;
 	}
+	
+	public static void receiveFile(String fileName, DataInputStream in, DataOutputStream out){
+
+		File file = new File(fileName);
+		
+		if (file.exists()){
+			System.out.println("in IF");
+			try {
+				out.writeUTF("file exists!");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		}
+		else{
+			try {
+				out.writeUTF("ready");
+				FileOutputStream fileStream= new FileOutputStream(file);
+				int intInput ;
+				String input;
+				do{
+					input = in.readUTF();
+					intInput = Integer.parseInt(input);
+					if (intInput!=-1) fileStream.write(intInput);
+				}while (intInput != -1);
+				
+				fileStream.close();
+				
+				out.writeUTF("Done!");
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+
+
+	}
 
 	public static String ChangeDirectory(String directory){
 		try {
@@ -113,15 +164,11 @@ public class FTPServer {
 					dir = new File (System.getProperty("user.dir"));
 
 					String ParentName = dir.getParentFile().getAbsolutePath();
-					
-//					if (ParentName != null){ 
-						System.setProperty("user.dir", ParentName);
-						String pwd = System.getProperty("user.dir");
-						return pwd;
-//					}
-//					else{
-//						return "no Parent Directory existed!";
-//					}
+
+					System.setProperty("user.dir", ParentName);
+					String pwd = System.getProperty("user.dir");
+					return pwd;
+
 				}
 				else{
 					dir = new File(directory);
@@ -138,15 +185,55 @@ public class FTPServer {
 			else{
 				return "No Directory Specified!";
 			}
-		
+
 		}
 		catch (NullPointerException e){
 			return "No Parent Directory";
 		}
 		catch (Exception e) {
-			
+
 			return "Error!";
 		}
 	}
-		
+	
+	
+	public static void SendFile(String fileName,DataInputStream in ,DataOutputStream out ) throws IOException{
+ 	   File file = new File(fileName);
+ 	   if (!file.exists()){
+ 		   System.out.println("No file exists!");
+ 		   return;
+ 	   }
+ 	   out.writeUTF("okey");
+ 	   String response = in.readUTF();
+
+ 	   if (!response.equals("ready")){
+ 		   System.out.println("File already exists in Server!");
+ 		   return;
+ 	   }
+ 	   
+ 	   
+ 	   try {
+			BufferedReader br = new BufferedReader(new FileReader(fileName));
+			int line;
+			do{
+				line = br.read();
+				out.writeUTF(String.valueOf(line));
+				
+			}while (line != -1);
+			br.close();
+			
+			out.writeUTF("Transfer successful!");
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+ 	   
+ 	   
+    }
+
+
 }
