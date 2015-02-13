@@ -161,7 +161,7 @@ public class FTPClient {
 					FileOutputStream fileStream= new FileOutputStream(file);
 					byte[] buffer = new byte[1024];
 					int count;
-					long j=1;
+//					long j=1;
 					do{
 						count=in.read(buffer);
 						fileStream.write(buffer, 0, count);
