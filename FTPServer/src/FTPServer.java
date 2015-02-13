@@ -11,82 +11,88 @@ public class FTPServer {
 
 		int portNumber = Integer.parseInt(args[0]);
 
-		try (
-				ServerSocket serverSocket = new ServerSocket(portNumber);
-				Socket clientSocket = serverSocket.accept(); 
+		ServerSocket serverSocket = new ServerSocket(portNumber);
+		Socket clientSocket = serverSocket.accept(); 
 
-				DataInputStream in = new DataInputStream(clientSocket.getInputStream());
-				DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
+		DataInputStream in = new DataInputStream(clientSocket.getInputStream());
+		DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
 
-				) {
-			String inputLine;
+				try {
+		String inputLine;
 
-			while (true) {
-				if (!clientSocket.isClosed()){
-					inputLine = in.readUTF();
-					//System.out.println("<" + inputLine + ">" );
-					String cmdName="";
-					String paraName ="";
-					boolean result=false;
-
-					inputLine = inputLine.trim();
-					int i = inputLine.indexOf(" ");
-
-					if (i != -1){
-						cmdName = inputLine.substring(0, i);
-						paraName = inputLine.substring(i+1 , inputLine.length());
-					}
-					else{
-						cmdName = inputLine;
-					}
-
-					switch (cmdName){
-					case "mkdir":					
-						result = CreateDirectory(paraName);
-						out.writeUTF( String.valueOf(result));
-						break;
-					case "delete":
-
-						out.writeUTF( DeleteDirectory(paraName));
-						break;
-					case "ls":
-						out.writeUTF( ListDirectory());
-						break;
-					case "pwd":
-						out.writeUTF( CurrentDirectory());
-						break;
-					case "cd":
-						out.writeUTF(ChangeDirectory (paraName));
-						break;
-					case "put":
-						receiveFile(paraName, in, out);
-						break;	
-					case "get":
-						SendFile(paraName, in, out);
-						break;
-					case "quit":
-						//					out.close();
-						//					in.close();
-						//					serverSocket.close();
-						//					System.exit(1);
-						clientSocket.close();
-						break;
-					default:
-						out.writeUTF(cmdName + ": command not found");
-						break;
-					}
+		while (true) {
+			if (serverSocket.isClosed()){
+				serverSocket = new ServerSocket(portNumber);
+				clientSocket = serverSocket.accept();
+				in = new DataInputStream(clientSocket.getInputStream());
+				out = new DataOutputStream(clientSocket.getOutputStream());
+			}
 
 
+
+			if (clientSocket.isClosed()){
+				clientSocket = serverSocket.accept();
+				in = new DataInputStream(clientSocket.getInputStream());
+				out = new DataOutputStream(clientSocket.getOutputStream());
+			}
+
+			if (!clientSocket.isClosed() ){
+				inputLine = in.readUTF();
+				String cmdName="";
+				String paraName ="";
+				boolean result=false;
+
+				inputLine = inputLine.trim();
+				int i = inputLine.indexOf(" ");
+
+				if (i != -1){
+					cmdName = inputLine.substring(0, i);
+					paraName = inputLine.substring(i+1 , inputLine.length());
+				}
+				else{
+					cmdName = inputLine;
+				}
+
+				switch (cmdName){
+				case "mkdir":					
+					result = CreateDirectory(paraName);
+					out.writeUTF( String.valueOf(result));
+					break;
+				case "delete":
+
+					out.writeUTF( DeleteDirectory(paraName));
+					break;
+				case "ls":
+					out.writeUTF( ListDirectory());
+					break;
+				case "pwd":
+					out.writeUTF( CurrentDirectory());
+					break;
+				case "cd":
+					out.writeUTF(ChangeDirectory (paraName));
+					break;
+				case "put":
+					receiveFile(paraName, in, out);
+					break;	
+				case "get":
+					SendFile(paraName, in, out);
+					break;
+				case "quit":
+					serverSocket.close();
+					clientSocket.close();
+					break;
+				default:
+					out.writeUTF(cmdName + ": command not found");
+					break;
 				}
 			}
-		} catch (IOException e) {
-			//			System.out.println("Exception caught when trying to listen on port "
-			//					+ portNumber + " or listening for a connection");
-			System.out.println(e.getMessage());
-			//			System.out.println(e);
+			else{
+				System.out.println("client socket close!");
+			}
 		}
-
-
+				} catch (IOException e) {
+					System.out.println(e.getMessage() + " \n" );
+				}
 	}
 
 	public static boolean CreateDirectory(String directoryName){		
@@ -128,7 +134,7 @@ public class FTPServer {
 		File file = new File(fileName);
 
 		if (file.exists()){
-		    //System.out.println("in IF");
+			//System.out.println("in IF");
 			try {
 				out.writeUTF("file exists!");
 			} catch (IOException e) {
@@ -150,12 +156,12 @@ public class FTPServer {
 					fileStream.write(buffer, 0, count);
 					//out.writeUTF("ready");
 					out.writeUTF("next");
-					
+
 					//System.out.println(j + "-" + count);
 					//j++;
 				}while (count/1024>0);
 
-				
+
 				fileStream.close();
 
 				out.writeUTF("Done!");
@@ -260,7 +266,7 @@ public class FTPServer {
 				String check = in.readUTF();
 				while(!check.equals("next")){
 				}
-				
+
 			}
 			br.close();
 			//out.writeUTF("Transfer successful!");

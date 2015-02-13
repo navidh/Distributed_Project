@@ -40,13 +40,10 @@ public class FTPClient {
 				case "put":
 
 					putData(paraName,inCon, outCon);
-					//System.out.println ( inCon.readUTF());
 					System.out.print("ftp:/> ");
 					break;
 				case "get":
-					//outCon.writeUTF(userInput);
 					getData(paraName, inCon, outCon);
-					//System.out.println ( inCon.readUTF());
 					System.out.print("ftp:/> ");
 					break;
 				case "quit":
@@ -180,6 +177,7 @@ public class FTPClient {
 
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
+				System.out.println("in Error");
 				e.printStackTrace();
 			}
 
